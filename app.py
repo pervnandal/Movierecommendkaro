@@ -3,6 +3,7 @@ import pickle as pkl
 import pandas as pd
 import requests
 import time
+import os
 import ast # Import abstract syntax tree for safely evaluating string-lists
 import html # Import for escaping HTML strings
 
