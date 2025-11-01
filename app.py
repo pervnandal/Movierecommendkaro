@@ -130,7 +130,7 @@ st.markdown("""
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         position: relative; 
         overflow: hidden; 
-        height: 100%; 
+        /* height: 100%;  <- REMOVED THIS LINE TO PREVENT OVERLAP */
         border: 1px solid #3a3a3a;
         display: flex;
         flex-direction: column;
@@ -261,26 +261,7 @@ st.markdown("""
         min-width: 16px; /* Ensure alignment */
     }
     
-    /* NEW: Trailer Button Style */
-    .trailer-button {
-        display: flex; /* Use flex for icon alignment */
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        padding: 8px 10px;
-        margin-top: 15px; /* Space above it */
-        background-color: #ff4b4b;
-        color: #ffffff;
-        text-align: center;
-        text-decoration: none;
-        font-weight: 600;
-        border-radius: 6px;
-        transition: background-color 0.2s ease;
-    }
-    .trailer-button:hover {
-        background-color: #e04040;
-        color: #ffffff; /* Ensure color stays white */
-    }
+    /* REMOVED: Trailer Button Style (no longer used on overlay) */
     
     /* Scrollbar for overlay */
     .movie-overlay::-webkit-scrollbar {
@@ -293,6 +274,97 @@ st.markdown("""
     .movie-overlay::-webkit-scrollbar-track {
         background-color: #333;
     }
+
+    /* --- REMOVED POPOVER STYLES --- */
+    
+    /* --- NEW: "More Info" Button Styling (replaces popover button) --- */
+    div[data-testid="stColumn"] .stButton button {
+        background-color: transparent;
+        color: #ff4b4b;
+        border: 1px solid #ff4b4b;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-weight: 600;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+        margin-top: 10px; /* Space from card */
+        width: 100%; /* Make it fill the centered div */
+    }
+    
+    div[data-testid="stColumn"] .stButton button:hover {
+        background-color: rgba(255, 75, 75, 0.1);
+        color: #ff6b6b;
+        border-color: #ff6b6b;
+        transform: none; /* Override default button hover */
+    }
+
+    /* --- NEW: Netflix-Style Modal (st.dialog) Styling --- */
+
+    /* The blurred background overlay */
+    div[data-testid="stModalBackdrop"] {
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+    }
+    
+    /* The modal content box */
+    div[data-testid="stModal"] {
+        background-color: #181818;
+        border-radius: 8px;
+        border: 1px solid #333;
+        color: #e0e0e0;
+        max-width: 850px;
+        width: 90vw;
+    }
+
+    /* Modal Image */
+    div[data-testid="stModal"] .stImage img { 
+        border-radius: 6px; 
+    }
+    
+    /* Modal Subheaders (Overview, Top Cast) */
+    div[data-testid="stModal"] .stSubheader { 
+        color: #e0e0e0; 
+        font-weight: 600; 
+        font-size: 1.25em;
+    }
+    
+    /* Modal Text */
+    div[data-testid="stModal"] strong { 
+        color: #ffffff; 
+    }
+    div[data-testid="stModal"] .stMarkdown { 
+        padding-bottom: 10px; 
+        font-size: 1.05em;
+    }
+    
+    /* Trailer Button (inside modal) - This now applies to st.video */
+    div[data-testid="stModal"] .stVideo {
+        border-radius: 6px;
+        overflow: hidden; /* Ensures video respects the border radius */
+    }
+
+    /* Close Button (inside modal) */
+    div[data-testid="stModal"] .stButton button {
+        background-color: #333;
+        color: #e0e0e0;
+        border: 1px solid #555;
+        max-width: 100%; /* Override main button style */
+    }
+    div[data-testid="stModal"] .stButton button:hover {
+        background-color: #444;
+        color: #ffffff;
+        border-color: #666;
+    }
+
+    /* --- NEW: Scroll-to-top script for modal --- */
+    /* This script finds the modal's scrollable area and sets its scroll position to the top */
+    /* We target the div that Streamlit uses for the main modal content area */
+    div[data-testid="stModal"] > div:nth-child(2) {
+        scroll-behavior: auto; /* Use 'auto' for instant scrolling, not 'smooth' */
+    }
+    
+    /* SCRIPT REMOVED FROM HERE */
 
 </style>
 """, unsafe_allow_html=True)
@@ -366,32 +438,55 @@ def load_data():
     return movies, similarity, unique_directors, unique_actors
 
 @st.cache_data
-def fetch_poster(movie_id):
+def fetch_api_details(movie_id):
+    """
+    Fetches rich movie details from the TMDB API, including poster,
+    rating, release date, runtime, and genres.
+    """
     url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key=6d90565f372a61b80c2880887efb194c&language=en-US'
+    
+    details = {
+        'poster': "https://placehold.co/500x750/2b2b2b/e0e0e0?text=No+Image",
+        'rating': 0,
+        'vote_count': 0,
+        'release_date': 'N/A',
+        'runtime': 0,
+        'genres': []
+    }
     
     for i in range(3): # Retry logic
         try:
             response = requests.get(url, timeout=5)
             response.raise_for_status() # checks https error
             data = response.json()
+            
             poster_path = data.get('poster_path')
             if poster_path:
-                return "https://image.tmdb.org/t/p/w500" + poster_path
+                # FIX: Corrected the URL typo
+                details['poster'] = "https://image.tmdb.org/t/p/w500" + poster_path
             else:
-                return "https://placehold.co/500x750/2b2b2b/e0e0e0?text=No+Poster"
+                details['poster'] = "https://placehold.co/500x750/2b2b2b/e0e0e0?text=No+Poster"
+
+            details['rating'] = data.get('vote_average', 0)
+            details['vote_count'] = data.get('vote_count', 0)
+            details['release_date'] = data.get('release_date', 'N/A')
+            details['runtime'] = data.get('runtime', 0)
+            details['genres'] = [g['name'] for g in data.get('genres', [])]
+            
+            return details
+            
         except requests.exceptions.RequestException as e:
             print(f"API request failed (attempt {i + 1}): {e}")
             time.sleep(1) 
 
-    return "https://placehold.co/500x750/2b2b2b/e0e0e0?text=No+Image"
+    return details # Return default details on failure
 
 
 @st.cache_data
 def fetch_trailer(movie_id):
     """
     Fetches the YouTube trailer link for a given movie ID.
-    Prioritizes official trailers first, then unofficial trailers,
-    then official teasers, then unofficial teasers.
+    Searches in a broad priority order to maximize finding a relevant video.
     """
     url = f'https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key=6d90565f372a61b80c2880887efb194c&language=en-US'
     try:
@@ -403,37 +498,46 @@ def fetch_trailer(movie_id):
         if not videos:
             return None
 
-        # --- New Prioritization Logic ---
-        
         # Filter for YouTube videos
         yt_videos = [v for v in videos if v['site'] == 'YouTube']
-        
+        if not yt_videos:
+            return None # No YouTube videos at all
+
+        # Helper function to find the best match in a list
+        def find_best_video(video_list):
+            if not video_list:
+                return None
+            # Sort by publish date, newest first
+            video_list.sort(key=lambda x: x.get('published_at', ''), reverse=True)
+            # FIX: Change to YouTube's 'embed' link format
+            return f"https://www.youtube.com/embed/{video_list[0]['key']}"
+
+        # --- New Prioritization Logic ---
         # 1. Official Trailers
-        official_trailers = [v for v in yt_videos if v['type'] == 'Trailer' and v.get('official', False)]
-        if official_trailers:
-            # Sort by publish date, newest first (most likely main trailer)
-            official_trailers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
-            return f"https://www.youtube.com/watch?v={official_trailers[0]['key']}"
+        video = find_best_video([v for v in yt_videos if v['type'] == 'Trailer' and v.get('official', False)])
+        if video: return video
         
-        # 2. Unofficial Trailers (fallback)
-        all_trailers = [v for v in yt_videos if v['type'] == 'Trailer']
-        if all_trailers:
-            all_trailers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
-            return f"https://www.youtube.com/watch?v={all_trailers[0]['key']}"
+        # 2. Unofficial Trailers
+        video = find_best_video([v for v in yt_videos if v['type'] == 'Trailer'])
+        if video: return video
             
         # 3. Official Teasers
-        official_teasers = [v for v in yt_videos if v['type'] == 'Teaser' and v.get('official', False)]
-        if official_teasers:
-            official_teasers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
-            return f"https://www.youtube.com/watch?v={official_teasers[0]['key']}"
+        video = find_best_video([v for v in yt_videos if v['type'] == 'Teaser' and v.get('official', False)])
+        if video: return video
 
-        # 4. Unofficial Teasers (fallback)
-        all_teasers = [v for v in yt_videos if v['type'] == 'Teaser']
-        if all_teasers:
-            all_teasers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
-            return f"https://www.youtube.com/watch?v={all_teasers[0]['key']}"
+        # 4. Unofficial Teasers
+        video = find_best_video([v for v in yt_videos if v['type'] == 'Teaser'])
+        if video: return video
 
-        return None # No YouTube trailer or teaser found
+        # 5. Any Official Video (Last resort)
+        video = find_best_video([v for v in yt_videos if v.get('official', False)])
+        if video: return video
+        
+        # 6. Any Unofficial Video (Final last resort)
+        video = find_best_video(yt_videos)
+        if video: return video
+
+        return None # No YouTube videos found even after all fallbacks
     except requests.exceptions.RequestException as e:
         print(f"Trailer request failed for movie ID {movie_id}: {e}")
         return None
@@ -461,13 +565,21 @@ def recommend(movie_title):
             movie_data = movies.iloc[p[0]]
             movie_id = movie_data.movie_id
             
+            # Fetch rich details from API
+            api_details = fetch_api_details(movie_id)
+            
             recommendations.append({
                 'title': movie_data.title,
-                'poster': fetch_poster(movie_id),
-                'trailer_url': fetch_trailer(movie_id), # Fetch trailer
-                'cast': movie_data.cast,
-                'crew': movie_data.crew,
-                'overview': movie_data.overview
+                'poster': api_details['poster'], # From API
+                'trailer_url': fetch_trailer(movie_id), # Separate call
+                'cast': movie_data.cast, # From local file
+                'crew': movie_data.crew, # From local file
+                'overview': movie_data.overview, # From local file
+                'rating': api_details['rating'], # From API
+                'vote_count': api_details['vote_count'], # From API
+                'release_date': api_details['release_date'], # From API
+                'runtime': api_details['runtime'], # From API
+                'genres': api_details['genres'] # From API
             })
         else:
             print(f"Skipping index {p[0]} as it's out of bounds for movies (length {len(movies)}).")
@@ -475,6 +587,10 @@ def recommend(movie_title):
     return recommendations
 
 # --- Main App Layout ---
+
+# NEW: Initialize session state for modal
+if 'selected_movie_details' not in st.session_state:
+    st.session_state.selected_movie_details = None
 
 # Load all data
 movies, similarity, unique_directors, unique_actors = load_data()
@@ -527,6 +643,10 @@ with st.container(border=True):
 
             # Recommend Button
             if st.button("Recommend") and selected_movie:
+                # NEW: Clear any open modal *before* getting new recommendations
+                if 'selected_movie_details' in st.session_state:
+                    st.session_state.selected_movie_details = None
+
                 with st.spinner('Finding movies you might like...'):
                     recommendations = recommend(selected_movie)
                 
@@ -537,6 +657,14 @@ with st.container(border=True):
             elif not selected_movie and 'recommendations' in st.session_state:
                 # Clear recommendations if no movie is selected
                 del st.session_state.recommendations
+                
+                # NEW: Also clear modal if no movie is selected
+                if 'selected_movie_details' in st.session_state:
+                    st.session_state.selected_movie_details = None
+
+            # REMOVED FLAWED LOGIC FROM HERE:
+            # if 'selected_movie_details' in st.session_state:
+            #     st.session_state.selected_movie_details = None
 
         else:
             st.warning("No movie titles found for the filtered criteria.")
@@ -563,14 +691,8 @@ if 'recommendations' in st.session_state and st.session_state.recommendations:
                 director_safe = html.escape(director_str)
                 overview_safe = html.escape(overview_str)
 
-                # NEW: Check for trailer and create button HTML
-                trailer_url = movie.get('trailer_url')
-                trailer_button_html = ""
-                if trailer_url:
-                    # Escape the URL as well for safety
-                    safe_trailer_url = html.escape(trailer_url)
-                    trailer_button_html = f'<a href="{safe_trailer_url}" target="_blank" class="trailer-button"><i class="fa-solid fa-play"></i>&nbsp;&nbsp;Watch Trailer</a>'
-
+                # REMOVED: Trailer button logic is no longer needed for the card
+                
                 # Build HTML card
                 html_card = f"""
                 <div class="movie-card">
@@ -583,8 +705,84 @@ if 'recommendations' in st.session_state and st.session_state.recommendations:
                         <div class="info-label"><strong><i class="fa-solid fa-users overlay-icon"></i> Cast:</strong> <span>{cast_safe}...</span></div>
                         <div class="overview-label"><strong><i class="fa-solid fa-file-alt overlay-icon"></i> Overview:</strong></div>
                         <p class="overview-text">{overview_safe}</p>
-                        {trailer_button_html}
                     </div>
                 </div>
                 """
                 st.markdown(html_card, unsafe_allow_html=True)
+                
+                # NEW: Replaced st.popover with st.button and modal logic
+                if st.button("More Info", key=f"info_{i}", use_container_width=True):
+                    st.session_state.selected_movie_details = movie
+                    st.rerun() # Rerun to open the modal
+                
+
+# --- NEW: Modal Display Logic ---
+# This block checks session state and displays the modal if a movie is selected
+if st.session_state.selected_movie_details:
+    movie = st.session_state.selected_movie_details
+    
+    # FIX: 'st.dialog' is a DECORATOR.
+    # You must define a function and decorate it.
+    @st.dialog(movie['title'])
+    def movie_dialog():
+        
+        # NEW: Place trailer at the top if it exists
+        if movie.get('trailer_url'):
+            st.video(movie['trailer_url'])
+            st.divider()
+
+        # NEW: Layout for smaller image
+        # FIX: Now we use 'st.columns' inside the dialog function
+        modal_col1, modal_col2 = st.columns([2, 3]) # 2 parts image, 3 parts text
+        
+        with modal_col1:
+            # FIX: Call 'image' on the column object
+            modal_col1.image(movie['poster'], use_container_width=True)
+            # REMOVED: Trailer is now at the top
+            
+        with modal_col2:
+            # FIX: Call elements on the column object
+            modal_col2.subheader(movie['title'])
+            
+            # Rating
+            rating_val = movie.get('rating', 0)
+            vote_count = movie.get('vote_count', 0)
+            if rating_val > 0:
+                modal_col2.markdown(f"**Rating:** {rating_val:.1f} ⭐ ({vote_count:,} votes)")
+            
+            # Release Date
+            modal_col2.markdown(f"**Release Date:** {movie.get('release_date', 'N/A')}")
+            
+            # Runtime
+            runtime = movie.get('runtime', 0)
+            if runtime > 0:
+                modal_col2.markdown(f"**Runtime:** {runtime} minutes")
+            
+            # Genres
+            genres = movie.get('genres', [])
+            if genres:
+                modal_col2.markdown(f"**Genres:** {', '.join(genres)}")
+                
+            # Full Cast
+            cast_list = movie.get('cast', [])
+            if cast_list:
+                modal_col2.subheader("Top Cast")
+                modal_col2.write(", ".join(cast_list[:10]) + "...")
+
+        # FIX: Call elements on 'st' directly, as they are inside the dialog function
+        st.divider()
+        
+        # Full Overview
+        st.subheader("Overview")
+        st.write(movie.get('overview', 'No overview available.'))
+        
+        st.divider()
+
+        # Close button for the modal
+        # FIX: Call 'button' on 'st'
+        if st.button("Close", key="modal_close_btn", use_container_width=True):
+            st.session_state.selected_movie_details = None
+            st.rerun() # Rerun to close the modal
+
+    # After defining the decorated function, CALL it to open the dialog
+    movie_dialog()
