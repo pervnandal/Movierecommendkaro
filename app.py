@@ -18,6 +18,8 @@ st.markdown("""
 <style>
     /* Import Google Font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    /* NEW: Import FontAwesome Icons */
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
     html, body, .stApp {
         background-color: #1a1a1a;
@@ -204,14 +206,80 @@ st.markdown("""
         font-weight: 700;
     }
 
-    .movie-overlay p {
+    /* OLD: .movie-overlay p { ... } */
+    /* NEW: Styles for overlay info */
+    .movie-overlay .info-label {
+        display: flex;
+        align-items: flex-start; /* Align icon with first line of text */
         margin-bottom: 10px;
+        font-size: 0.95em;
+        line-height: 1.5; /* For if value wraps */
+    }
+
+    .movie-overlay .info-label strong {
+        color: #ffffff; /* Bright white label */
+        white-space: nowrap;
+        margin-right: 8px;
+        font-weight: 600;
+        flex-shrink: 0; /* Don't let the label shrink */
+        display: flex; /* To align icon and text */
+        align-items: center;
+    }
+    
+    .movie-overlay .info-label span {
+        color: #d1d1d1; /* Dimmer value text */
+    }
+    
+    .movie-overlay .overview-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
         font-size: 0.95em;
     }
     
-    .movie-overlay p strong {
-        color: #e0e0e0;
+    .movie-overlay .overview-label strong {
+        color: #ffffff;
+        white-space: nowrap;
         font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .movie-overlay .overview-text {
+        color: #d1d1d1;
+        font-size: 0.92em; /* Slightly smaller for overview block */
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
+    
+    /* OLD: .movie-overlay p strong { ... } */
+    
+    /* NEW: Icon styling */
+    .overlay-icon {
+        color: #ff4b4b;
+        margin-right: 8px;
+        min-width: 16px; /* Ensure alignment */
+    }
+    
+    /* NEW: Trailer Button Style */
+    .trailer-button {
+        display: flex; /* Use flex for icon alignment */
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 8px 10px;
+        margin-top: 15px; /* Space above it */
+        background-color: #ff4b4b;
+        color: #ffffff;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+    }
+    .trailer-button:hover {
+        background-color: #e04040;
+        color: #ffffff; /* Ensure color stays white */
     }
     
     /* Scrollbar for overlay */
@@ -318,6 +386,59 @@ def fetch_poster(movie_id):
     return "https://placehold.co/500x750/2b2b2b/e0e0e0?text=No+Image"
 
 
+@st.cache_data
+def fetch_trailer(movie_id):
+    """
+    Fetches the YouTube trailer link for a given movie ID.
+    Prioritizes official trailers first, then unofficial trailers,
+    then official teasers, then unofficial teasers.
+    """
+    url = f'https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key=6d90565f372a61b80c2880887efb194c&language=en-US'
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        videos = data.get('results', [])
+        
+        if not videos:
+            return None
+
+        # --- New Prioritization Logic ---
+        
+        # Filter for YouTube videos
+        yt_videos = [v for v in videos if v['site'] == 'YouTube']
+        
+        # 1. Official Trailers
+        official_trailers = [v for v in yt_videos if v['type'] == 'Trailer' and v.get('official', False)]
+        if official_trailers:
+            # Sort by publish date, newest first (most likely main trailer)
+            official_trailers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
+            return f"https://www.youtube.com/watch?v={official_trailers[0]['key']}"
+        
+        # 2. Unofficial Trailers (fallback)
+        all_trailers = [v for v in yt_videos if v['type'] == 'Trailer']
+        if all_trailers:
+            all_trailers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
+            return f"https://www.youtube.com/watch?v={all_trailers[0]['key']}"
+            
+        # 3. Official Teasers
+        official_teasers = [v for v in yt_videos if v['type'] == 'Teaser' and v.get('official', False)]
+        if official_teasers:
+            official_teasers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
+            return f"https://www.youtube.com/watch?v={official_teasers[0]['key']}"
+
+        # 4. Unofficial Teasers (fallback)
+        all_teasers = [v for v in yt_videos if v['type'] == 'Teaser']
+        if all_teasers:
+            all_teasers.sort(key=lambda x: x.get('published_at', ''), reverse=True)
+            return f"https://www.youtube.com/watch?v={all_teasers[0]['key']}"
+
+        return None # No YouTube trailer or teaser found
+    except requests.exceptions.RequestException as e:
+        print(f"Trailer request failed for movie ID {movie_id}: {e}")
+        return None
+
+
 def recommend(movie_title):
     """
     Recommends 5 similar movies.
@@ -343,6 +464,7 @@ def recommend(movie_title):
             recommendations.append({
                 'title': movie_data.title,
                 'poster': fetch_poster(movie_id),
+                'trailer_url': fetch_trailer(movie_id), # Fetch trailer
                 'cast': movie_data.cast,
                 'crew': movie_data.crew,
                 'overview': movie_data.overview
@@ -441,6 +563,14 @@ if 'recommendations' in st.session_state and st.session_state.recommendations:
                 director_safe = html.escape(director_str)
                 overview_safe = html.escape(overview_str)
 
+                # NEW: Check for trailer and create button HTML
+                trailer_url = movie.get('trailer_url')
+                trailer_button_html = ""
+                if trailer_url:
+                    # Escape the URL as well for safety
+                    safe_trailer_url = html.escape(trailer_url)
+                    trailer_button_html = f'<a href="{safe_trailer_url}" target="_blank" class="trailer-button"><i class="fa-solid fa-play"></i>&nbsp;&nbsp;Watch Trailer</a>'
+
                 # Build HTML card
                 html_card = f"""
                 <div class="movie-card">
@@ -449,9 +579,11 @@ if 'recommendations' in st.session_state and st.session_state.recommendations:
                     <div class="movie-title">{title_safe}</div>
                     <div class="movie-overlay">
                         <h4>{title_safe}</h4>
-                        <p><strong>Director:</strong> {director_safe}</p>
-                        <p><strong>Cast:</strong> {cast_safe}...</p>
-                        <p><strong>Overview:</strong> {overview_safe}</p>
+                        <div class="info-label"><strong><i class="fa-solid fa-clapperboard overlay-icon"></i> Director:</strong> <span>{director_safe}</span></div>
+                        <div class="info-label"><strong><i class="fa-solid fa-users overlay-icon"></i> Cast:</strong> <span>{cast_safe}...</span></div>
+                        <div class="overview-label"><strong><i class="fa-solid fa-file-alt overlay-icon"></i> Overview:</strong></div>
+                        <p class="overview-text">{overview_safe}</p>
+                        {trailer_button_html}
                     </div>
                 </div>
                 """
