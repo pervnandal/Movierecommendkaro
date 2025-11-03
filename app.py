@@ -13,12 +13,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Improved CSS Styling ---
+# CSS Styling 
 st.markdown("""
 <style>
     /* Import Google Font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    /* NEW: Import FontAwesome Icons */
+    /* Import FontAwesome Icons */
     @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
     html, body, .stApp {
@@ -28,14 +28,13 @@ st.markdown("""
     }
 
     html, body, .stApp {
-        /* OLD: background-color: #1a1a1a; */
         background: radial-gradient(ellipse at center, #2c2c2e 0%, #1a1a1a 70%);
         background-attachment: fixed; /* Keeps the gradient in place on scroll */
         color: #ffffff;
         font-family: 'Inter', sans-serif;
     }
 
-    /* --- Title --- */
+    /* Title */
     h1 {
         color: #ff4b4b; 
         text-align: center;
@@ -45,7 +44,7 @@ st.markdown("""
         text-shadow: 0 2px 4px rgba(255, 75, 75, 0.2);
     }
     
-    /* --- Recommendation Subheader --- */
+    /* Recommendation Subheader */
     .recommend-header {
         text-align: center;
         color: #e0e0e0;
@@ -54,7 +53,7 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
-    /* --- Control Container --- */
+    /* Control Container */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         /* OLD: background-color: #222222; */
         background-color: rgba(34, 34, 34, 0.7); /* Semi-transparent */
@@ -71,7 +70,7 @@ st.markdown("""
         font-weight: 600;
     }
 
-    /* --- Select Box Styling --- */
+    /* Select Box Styling */
     .stSelectbox label {
         color: #e0e0e0;
         font-weight: 600;
@@ -85,13 +84,13 @@ st.markdown("""
         border: 1px solid #444;
     }
 
-    /* NEW: Center the button */
+    /* Center the button */
     div[data-testid="stButton"] {
         display: flex;
         justify-content: center;
     }
 
-    /* --- Button Styling --- */
+    /* Button Styling */
     .stButton>button {
         background-color: #ff4b4b;
         color: #ffffff;
@@ -101,7 +100,6 @@ st.markdown("""
         font-weight: 700;
         font-size: 1.1em;
         transition: background-color 0.3s ease, transform 0.2s ease;
-        /* OLD: width: 100%; /* Handled by use_container_width=True */
         max-width: 300px; /* Set a max width for a smaller button */
     }
 
@@ -114,7 +112,7 @@ st.markdown("""
         transform: scale(0.98);
     }
 
-    /* --- Card Styling --- */
+    /* Card Styling */
     
     /* Remove default column padding and add margin */
     .stColumn {
@@ -130,7 +128,6 @@ st.markdown("""
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         position: relative; 
         overflow: hidden; 
-        /* height: 100%;  <- REMOVED THIS LINE TO PREVENT OVERLAP */
         border: 1px solid #3a3a3a;
         display: flex;
         flex-direction: column;
@@ -167,7 +164,7 @@ st.markdown("""
         flex-shrink: 0; /* Prevent title from shrinking */
     }
 
-    /* --- Card Overlay Styling --- */
+    /* Card Overlay Styling */
     .movie-overlay {
         position: absolute;
         top: 0;
@@ -206,8 +203,7 @@ st.markdown("""
         font-weight: 700;
     }
 
-    /* OLD: .movie-overlay p { ... } */
-    /* NEW: Styles for overlay info */
+    /* Styles for overlay info */
     .movie-overlay .info-label {
         display: flex;
         align-items: flex-start; /* Align icon with first line of text */
@@ -252,17 +248,13 @@ st.markdown("""
         margin-bottom: 10px;
     }
     
-    /* OLD: .movie-overlay p strong { ... } */
-    
-    /* NEW: Icon styling */
+    /* Icon styling */
     .overlay-icon {
         color: #ff4b4b;
         margin-right: 8px;
         min-width: 16px; /* Ensure alignment */
     }
-    
-    /* REMOVED: Trailer Button Style (no longer used on overlay) */
-    
+
     /* Scrollbar for overlay */
     .movie-overlay::-webkit-scrollbar {
         width: 6px;
@@ -275,9 +267,6 @@ st.markdown("""
         background-color: #333;
     }
 
-    /* --- REMOVED POPOVER STYLES --- */
-    
-    /* --- NEW: "More Info" Button Styling (replaces popover button) --- */
     div[data-testid="stColumn"] .stButton button {
         background-color: transparent;
         color: #ff4b4b;
@@ -297,8 +286,6 @@ st.markdown("""
         border-color: #ff6b6b;
         transform: none; /* Override default button hover */
     }
-
-    /* --- NEW: Netflix-Style Modal (st.dialog) Styling --- */
 
     /* The blurred background overlay */
     div[data-testid="stModalBackdrop"] {
@@ -338,7 +325,7 @@ st.markdown("""
         font-size: 1.05em;
     }
     
-    /* Trailer Button (inside modal) - This now applies to st.video */
+    /* Trailer Button (inside modal) */
     div[data-testid="stModal"] .stVideo {
         border-radius: 6px;
         overflow: hidden; /* Ensures video respects the border radius */
@@ -357,19 +344,15 @@ st.markdown("""
         border-color: #666;
     }
 
-    /* --- NEW: Scroll-to-top script for modal --- */
-    /* This script finds the modal's scrollable area and sets its scroll position to the top */
-    /* We target the div that Streamlit uses for the main modal content area */
+    /* Scroll-to-top script for modal */
     div[data-testid="stModal"] > div:nth-child(2) {
         scroll-behavior: auto; /* Use 'auto' for instant scrolling, not 'smooth' */
     }
-    
-    /* SCRIPT REMOVED FROM HERE */
 
 </style>
 """, unsafe_allow_html=True)
 
-# --- Data Helper Functions ---
+# Data Helper Functions
 
 def safe_literal_eval(val):
     """
@@ -386,7 +369,7 @@ def safe_literal_eval(val):
     except (ValueError, SyntaxError):
         return []
 
-# --- Main App Functions ---
+# Main App Functions
 @st.cache_data
 def load_data():
     """
@@ -419,7 +402,6 @@ def load_data():
         st.error("Error: 'overview' column not found in movies_dict.pkl.")
         movies['overview'] = "" # Add empty overview column as fallback
     else:
-        # Fill NaN overviews with an empty string
         movies['overview'] = movies['overview'].fillna("")
 
 
@@ -457,12 +439,11 @@ def fetch_api_details(movie_id):
     for i in range(3): # Retry logic
         try:
             response = requests.get(url, timeout=5)
-            response.raise_for_status() # checks https error
+            response.raise_for_status()
             data = response.json()
             
             poster_path = data.get('poster_path')
             if poster_path:
-                # FIX: Corrected the URL typo
                 details['poster'] = "https://image.tmdb.org/t/p/w500" + poster_path
             else:
                 details['poster'] = "https://placehold.co/500x750/2b2b2b/e0e0e0?text=No+Poster"
@@ -479,7 +460,7 @@ def fetch_api_details(movie_id):
             print(f"API request failed (attempt {i + 1}): {e}")
             time.sleep(1) 
 
-    return details # Return default details on failure
+    return details
 
 
 @st.cache_data
@@ -501,18 +482,16 @@ def fetch_trailer(movie_id):
         # Filter for YouTube videos
         yt_videos = [v for v in videos if v['site'] == 'YouTube']
         if not yt_videos:
-            return None # No YouTube videos at all
+            return None
 
-        # Helper function to find the best match in a list
         def find_best_video(video_list):
             if not video_list:
                 return None
             # Sort by publish date, newest first
             video_list.sort(key=lambda x: x.get('published_at', ''), reverse=True)
-            # FIX: Change to YouTube's 'embed' link format
             return f"https://www.youtube.com/embed/{video_list[0]['key']}"
 
-        # --- New Prioritization Logic ---
+        # Prioritization Logic
         # 1. Official Trailers
         video = find_best_video([v for v in yt_videos if v['type'] == 'Trailer' and v.get('official', False)])
         if video: return video
@@ -558,14 +537,13 @@ def recommend(movie_title):
     movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
 
     recommendations = []
-    
-    # Use a spinner that covers the recommendation fetch
+
     for p in movie_list:
         if p[0] < len(movies):
             movie_data = movies.iloc[p[0]]
             movie_id = movie_data.movie_id
-            
-            # Fetch rich details from API
+
+            # Fetch API details
             api_details = fetch_api_details(movie_id)
             
             recommendations.append({
@@ -586,9 +564,9 @@ def recommend(movie_title):
             
     return recommendations
 
-# --- Main App Layout ---
+# Main App Layout 
 
-# NEW: Initialize session state for modal
+# Initialize session state for modal
 if 'selected_movie_details' not in st.session_state:
     st.session_state.selected_movie_details = None
 
@@ -597,7 +575,7 @@ movies, similarity, unique_directors, unique_actors = load_data()
 
 st.title('Movie Recommendation System')
 
-# --- Control Section ---
+# Control Section
 with st.container(border=True):
     st.subheader("Find Your Next Movie")
     
@@ -628,7 +606,7 @@ with st.container(border=True):
             )
         ]
 
-    # --- Movie Selection and Recommendation ---
+    # Movie Selection and Recommendation 
     if filtered_movies.empty:
         st.warning("No movies match your filter criteria. Please broaden your search.")
     else:
@@ -643,7 +621,7 @@ with st.container(border=True):
 
             # Recommend Button
             if st.button("Recommend") and selected_movie:
-                # NEW: Clear any open modal *before* getting new recommendations
+                # Clear any open modal before getting new recommendations
                 if 'selected_movie_details' in st.session_state:
                     st.session_state.selected_movie_details = None
 
@@ -657,19 +635,15 @@ with st.container(border=True):
             elif not selected_movie and 'recommendations' in st.session_state:
                 # Clear recommendations if no movie is selected
                 del st.session_state.recommendations
-                
-                # NEW: Also clear modal if no movie is selected
+
+                # clear modal if no movie is selected
                 if 'selected_movie_details' in st.session_state:
                     st.session_state.selected_movie_details = None
-
-            # REMOVED FLAWED LOGIC FROM HERE:
-            # if 'selected_movie_details' in st.session_state:
-            #     st.session_state.selected_movie_details = None
 
         else:
             st.warning("No movie titles found for the filtered criteria.")
 
-# --- Display Recommendations ---
+# Display Recommendations
 if 'recommendations' in st.session_state and st.session_state.recommendations:
     st.markdown("<h2 class='recommend-header'>Here are 5 movies you might also like:</h2>", unsafe_allow_html=True)
     
@@ -691,8 +665,6 @@ if 'recommendations' in st.session_state and st.session_state.recommendations:
                 director_safe = html.escape(director_str)
                 overview_safe = html.escape(overview_str)
 
-                # REMOVED: Trailer button logic is no longer needed for the card
-                
                 # Build HTML card
                 html_card = f"""
                 <div class="movie-card">
@@ -709,77 +681,61 @@ if 'recommendations' in st.session_state and st.session_state.recommendations:
                 </div>
                 """
                 st.markdown(html_card, unsafe_allow_html=True)
-                
-                # NEW: Replaced st.popover with st.button and modal logic
+
                 if st.button("More Info", key=f"info_{i}", use_container_width=True):
                     st.session_state.selected_movie_details = movie
                     st.rerun() # Rerun to open the modal
                 
 
-# --- NEW: Modal Display Logic ---
+# Modal Display Logic
 # This block checks session state and displays the modal if a movie is selected
 if st.session_state.selected_movie_details:
     movie = st.session_state.selected_movie_details
-    
-    # FIX: 'st.dialog' is a DECORATOR.
-    # You must define a function and decorate it.
+
     @st.dialog(movie['title'])
     def movie_dialog():
-        
-        # NEW: Place trailer at the top if it exists
+        # Movie Trailer at top
         if movie.get('trailer_url'):
             st.video(movie['trailer_url'])
             st.divider()
 
-        # NEW: Layout for smaller image
-        # FIX: Now we use 'st.columns' inside the dialog function
         modal_col1, modal_col2 = st.columns([2, 3]) # 2 parts image, 3 parts text
         
         with modal_col1:
-            # FIX: Call 'image' on the column object
             modal_col1.image(movie['poster'], use_container_width=True)
-            # REMOVED: Trailer is now at the top
-            
+
         with modal_col2:
             # FIX: Call elements on the column object
             modal_col2.subheader(movie['title'])
-            
-            # Rating
+
             rating_val = movie.get('rating', 0)
             vote_count = movie.get('vote_count', 0)
             if rating_val > 0:
                 modal_col2.markdown(f"**Rating:** {rating_val:.1f} ⭐ ({vote_count:,} votes)")
-            
-            # Release Date
+
             modal_col2.markdown(f"**Release Date:** {movie.get('release_date', 'N/A')}")
-            
-            # Runtime
+
             runtime = movie.get('runtime', 0)
             if runtime > 0:
                 modal_col2.markdown(f"**Runtime:** {runtime} minutes")
-            
-            # Genres
+
             genres = movie.get('genres', [])
             if genres:
                 modal_col2.markdown(f"**Genres:** {', '.join(genres)}")
-                
-            # Full Cast
+
             cast_list = movie.get('cast', [])
             if cast_list:
                 modal_col2.subheader("Top Cast")
                 modal_col2.write(", ".join(cast_list[:10]) + "...")
 
-        # FIX: Call elements on 'st' directly, as they are inside the dialog function
         st.divider()
-        
-        # Full Overview
+
         st.subheader("Overview")
         st.write(movie.get('overview', 'No overview available.'))
         
         st.divider()
 
         # Close button for the modal
-        # FIX: Call 'button' on 'st'
         if st.button("Close", key="modal_close_btn", use_container_width=True):
             st.session_state.selected_movie_details = None
             st.rerun() # Rerun to close the modal
